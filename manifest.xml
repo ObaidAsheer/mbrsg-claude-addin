@@ -6,8 +6,8 @@
   xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
   xsi:type="MailApp">
 
-  <Id>C3D4E5F6-A7B8-9012-CDEF-123456789ABC</Id>
-  <Version>1.0.0.1</Version>
+  <Id>e2916ede-12bd-4da6-88fb-1ca76c9974f1</Id>
+  <Version>1.0.0.2</Version>
   <ProviderName>MBRSG IT Department</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="MBRSG Claude AI"/>
