@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBRSG Claude AI</title>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1a6b3c;
+    --green-light: #e8f5ee;
+    --green-mid: #2d8f55;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --amber: #d4830a;
+    --amber-light: #fef6e4;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+    --surface: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --muted2: #9ca3af;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* Header */
+  .header {
+    background: var(--green);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-logo {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-logo svg { width: 16px; height: 16px; }
+
+  .header-text { flex: 1; }
+  .header-title { font-size: 13px; font-weight: 600; color: white; }
+  .header-sub { font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+
+  .header-status {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+  }
+  .header-status.inactive { background: #9ca3af; }
+
+  /* API key setup screen */
+  #setup-screen {
+    padding: 20px 16px;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .setup-icon {
+    width: 44px; height: 44px;
+    background: var(--green-light);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    font-size: 20px;
+  }
+
+  .setup-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .setup-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+
+  .input-label { font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .api-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    background: var(--bg);
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-input:focus { border-color: var(--green); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .setup-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--amber-light);
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: #92400e;
+    line-height: 1.5;
+  }
+
+  /* Main app */
+  #main-app { display: none; }
+
+  /* Email context bar */
+  .email-context {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+  }
+
+  .context-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted2);
+    margin-bottom: 4px;
+  }
+
+  .context-subject {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .context-from {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Action grid */
+  .actions-section {
+    padding: 14px 16px 10px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted2);
+    margin-bottom: 10px;
+  }
+
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .action-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .action-btn:hover { border-color: var(--green); background: var(--green-light); }
+  .action-btn:active { transform: scale(0.98); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .action-icon { font-size: 16px; margin-bottom: 4px; display: block; }
+  .action-name { font-size: 12px; font-weight: 500; color: var(--text); display: block; }
+  .action-desc { font-size: 10px; color: var(--muted); margin-top: 1px; display: block; }
+
+  /* Custom prompt */
+  .custom-section {
+    padding: 0 16px 14px;
+  }
+
+  .custom-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .custom-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .custom-input:focus { border-color: var(--green); }
+
+  .custom-send {
+    padding: 9px 14px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .custom-send:hover { opacity: 0.9; }
+  .custom-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Confidentiality scanner */
+  .scan-section {
+    padding: 0 16px 14px;
+  }
+
+  .scan-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .scan-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+  /* Output area */
+  .output-section {
+    padding: 0 16px 16px;
+    display: none;
+  }
+  .output-section.active { display: block; }
+
+  .output-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .output-header {
+    padding: 10px 14px;
+    background: var(--green-light);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .output-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .output-actions-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .out-action-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .out-action-btn:hover { border-color: var(--green); color: var(--green); }
+
+  .output-body {
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+    min-height: 60px;
+    white-space: pre-wrap;
+  }
+
+  /* Status indicators */
+  .status-bar {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Alert boxes */
+  .alert {
+    margin: 0 16px 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .alert.active { display: flex; }
+
+  .alert-danger { background: var(--red-light); border: 1px solid #fca5a5; color: #7f1d1d; }
+  .alert-success { background: var(--green-light); border: 1px solid #86efac; color: #14532d; }
+  .alert-warn { background: var(--amber-light); border: 1px solid #fcd34d; color: #78350f; }
+
+  .alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .alert-content { flex: 1; }
+  .alert-title { font-weight: 600; margin-bottom: 2px; }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #d1fae5;
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 16px 14px;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+  }
+
+  .footer-text { font-size: 10px; color: var(--muted2); }
+  .reset-link { font-size: 10px; color: var(--muted2); cursor: pointer; text-decoration: underline; }
+  .reset-link:hover { color: var(--red); }
+
+  /* Typing cursor */
+  .cursor::after {
+    content: '▋';
+    animation: blink 1s infinite;
+    font-size: 12px;
+    color: var(--green);
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Token counter */
+  .token-info {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted2);
+  }
+
+  .lang-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 0 16px 12px;
+  }
+  .lang-btn {
+    padding: 5px 12px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .lang-btn.active { background: var(--green); color: white; border-color: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="header">
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z"/></svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">MBRSG Claude AI</div>
+      <div class="header-sub">Outlook Assistant</div>
+    </div>
+    <div class="header-status inactive" id="status-dot"></div>
+  </div>
+
+  <div style="padding: 20px 16px;">
+    <div class="setup-card">
+      <div class="setup-icon">🔑</div>
+      <div class="setup-title">Connect your API key</div>
+      <div class="setup-desc">Enter your Anthropic API key to activate Claude AI inside Outlook. Your key is stored locally in this browser only — never sent anywhere except Anthropic's servers.</div>
+
+      <div class="input-label">Anthropic API Key</div>
+      <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
+
+      <button class="btn-primary" onclick="saveApiKey()">Connect & Activate</button>
+
+      <div class="setup-note">
+        <span>🔒</span>
+        <span>Your key is stored in localStorage on this device only. It is never logged or shared. Get your key at <strong>console.anthropic.com</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app">
+  <div class="header">
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z"/></svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">MBRSG Claude AI</div>
+      <div class="header-sub">Outlook Assistant</div>
+    </div>
+    <div class="header-status" id="status-dot-main"></div>
+  </div>
+
+  <!-- Email context -->
+  <div class="email-context">
+    <div class="context-label">Current email</div>
+    <div class="context-subject" id="email-subject">Loading email...</div>
+    <div class="context-from" id="email-from"></div>
+  </div>
+
+  <!-- Language toggle -->
+  <div class="lang-toggle" style="margin-top: 12px;">
+    <button class="lang-btn active" onclick="setLang('en', this)">English</button>
+    <button class="lang-btn" onclick="setLang('ar', this)">العربية</button>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="actions-section">
+    <div class="section-label">Quick actions</div>
+    <div class="action-grid">
+      <button class="action-btn" onclick="runAction('summarize')">
+        <span class="action-icon">⚡</span>
+        <span class="action-name">Summarize</span>
+        <span class="action-desc">Key points in 3 lines</span>
+      </button>
+      <button class="action-btn" onclick="runAction('reply')">
+        <span class="action-icon">↩</span>
+        <span class="action-name">Draft reply</span>
+        <span class="action-desc">Professional response</span>
+      </button>
+      <button class="action-btn" onclick="runAction('translate')">
+        <span class="action-icon">🌐</span>
+        <span class="action-name">Translate</span>
+        <span class="action-desc">AR ↔ EN</span>
+      </button>
+      <button class="action-btn" onclick="runAction('actions')">
+        <span class="action-icon">✓</span>
+        <span class="action-name">Action items</span>
+        <span class="action-desc">Extract tasks</span>
+      </button>
+      <button class="action-btn" onclick="runAction('tone')">
+        <span class="action-icon">✍</span>
+        <span class="action-name">Improve tone</span>
+        <span class="action-desc">More professional</span>
+      </button>
+      <button class="action-btn" onclick="runAction('sentiment')">
+        <span class="action-icon">📊</span>
+        <span class="action-name">Sentiment</span>
+        <span class="action-desc">Urgency & tone</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom prompt -->
+  <div class="custom-section">
+    <div class="section-label" style="margin-bottom: 8px;">Ask Claude anything about this email</div>
+    <div class="custom-row">
+      <input type="text" class="custom-input" id="custom-prompt" placeholder="e.g. Should I escalate this?" onkeydown="if(event.key==='Enter') sendCustom()" />
+      <button class="custom-send" onclick="sendCustom()">→</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Confidentiality scanner -->
+  <div class="scan-section">
+    <div class="section-label" style="margin-bottom: 8px;">Confidentiality scanner</div>
+    <button class="scan-btn" onclick="scanEmail()">
+      🔍 Scan this email for confidential content
+    </button>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-danger" id="alert-danger">
+    <span class="alert-icon">⚠</span>
+    <div class="alert-content">
+      <div class="alert-title">Confidential content detected</div>
+      <div id="alert-danger-text"></div>
+    </div>
+  </div>
+
+  <div class="alert alert-success" id="alert-success">
+    <span class="alert-icon">✓</span>
+    <div class="alert-content">
+      <div class="alert-title">No confidential content found</div>
+      <div>This email appears safe to forward or share.</div>
+    </div>
+  </div>
+
+  <div class="alert alert-warn" id="alert-warn">
+    <span class="alert-icon">⚡</span>
+    <div class="alert-content">
+      <div class="alert-title" id="alert-warn-title">Processing</div>
+      <div id="alert-warn-text"></div>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-section" id="output-section">
+    <div class="output-card">
+      <div class="output-header">
+        <div class="output-title">
+          <span id="output-spinner" class="spinner" style="display:none;"></span>
+          <span id="output-label">Claude</span>
+        </div>
+        <div class="output-actions-row">
+          <button class="out-action-btn" onclick="copyOutput()">Copy</button>
+          <button class="out-action-btn" onclick="insertToReply()" id="insert-btn">Insert</button>
+          <button class="out-action-btn" onclick="clearOutput()">✕</button>
+        </div>
+      </div>
+      <div class="output-body" id="output-body"></div>
+      <div class="status-bar">
+        <span id="token-display" class="token-info"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-text">MBRSG · Claude AI v1.0</span>
+    <span class="reset-link" onclick="resetKey()">Change API key</span>
+  </div>
+</div>
+
+<script>
+  let apiKey = '';
+  let currentEmailBody = '';
+  let currentEmailSubject = '';
+  let currentEmailSender = '';
+  let outputLang = 'en';
+  let lastOutput = '';
+
+  // Office.js init
+  Office.onReady((info) => {
+    if (info.host === Office.HostType.Outlook) {
+      loadEmail();
+    } else {
+      // For testing outside Outlook
+      currentEmailSubject = 'Test Email — No Outlook context';
+      currentEmailFrom = 'test@mbrsg.gov.ae';
+      currentEmailBody = 'This is a test email body for development purposes.';
+    }
+    checkApiKey();
+  });
+
+  function checkApiKey() {
+    const stored = localStorage.getItem('mbrsg_api_key');
+    if (stored && stored.startsWith('sk-ant')) {
+      apiKey = stored;
+      showMainApp();
+    }
+  }
+
+  function saveApiKey() {
+    const input = document.getElementById('api-key-input').value.trim();
+    if (!input.startsWith('sk-ant')) {
+      alert('Please enter a valid Anthropic API key starting with sk-ant');
+      return;
+    }
+    localStorage.setItem('mbrsg_api_key', input);
+    apiKey = input;
+    showMainApp();
+  }
+
+  function showMainApp() {
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    loadEmail();
+  }
+
+  function resetKey() {
+    if (confirm('Remove API key and reset?')) {
+      localStorage.removeItem('mbrsg_api_key');
+      location.reload();
+    }
+  }
+
+  function loadEmail() {
+    try {
+      const item = Office.context.mailbox.item;
+      if (!item) return;
+
+      currentEmailSubject = item.subject || '(No subject)';
+      document.getElementById('email-subject').textContent = currentEmailSubject;
+
+      if (item.from) {
+        const from = item.from.displayName + ' <' + item.from.emailAddress + '>';
+        currentEmailSender = from;
+        document.getElementById('email-from').textContent = from;
+      }
+
+      item.body.getAsync(Office.CoercionType.Text, (result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          currentEmailBody = result.value.substring(0, 4000);
+        }
+      });
+    } catch(e) {
+      document.getElementById('email-subject').textContent = 'Could not load email';
+    }
+  }
+
+  function setLang(lang, btn) {
+    outputLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  const prompts = {
+    summarize: (lang) => `Summarize this email in 3 concise bullet points. ${lang === 'ar' ? 'Respond in Arabic.' : 'Respond in English.'} Be brief and direct.`,
+    reply: (lang) => `Draft a professional reply to this email on behalf of an IT administrator at MBRSG (Mohammed Bin Rashid School of Government), Dubai. ${lang === 'ar' ? 'Write the reply in Arabic.' : 'Write the reply in English.'} Keep it concise and professional.`,
+    translate: (lang) => lang === 'ar' ? 'Translate this email to Arabic. Preserve the professional tone.' : 'Translate this email to English. Preserve the professional tone.',
+    actions: (lang) => `Extract all action items and tasks from this email as a numbered list. ${lang === 'ar' ? 'Respond in Arabic.' : 'Respond in English.'}`,
+    tone: (lang) => `Rewrite this email in a more formal and professional tone suitable for a government organization. ${lang === 'ar' ? 'Respond in Arabic.' : 'Keep in English.'}`,
+    sentiment: (lang) => `Analyze this email and tell me: 1) Overall sentiment (positive/neutral/negative), 2) Urgency level (low/medium/high), 3) Whether a response is required and by when. ${lang === 'ar' ? 'Respond in Arabic.' : 'Respond in English.'}`
+  };
+
+  const actionLabels = {
+    summarize: 'Summary',
+    reply: 'Draft Reply',
+    translate: 'Translation',
+    actions: 'Action Items',
+    tone: 'Improved Version',
+    sentiment: 'Sentiment Analysis'
+  };
+
+  async function runAction(action) {
+    if (!apiKey) { alert('Please set your API key first.'); return; }
+    if (!currentEmailBody && !currentEmailSubject) {
+      showOutput('No email content found. Please open an email first.', action);
+      return;
+    }
+
+    const emailContent = `Subject: ${currentEmailSubject}\nFrom: ${currentEmailSender}\n\n${currentEmailBody}`;
+    const systemPrompt = `You are Claude, an AI assistant integrated into Microsoft Outlook for MBRSG (Mohammed Bin Rashid School of Government), a government institution in Dubai, UAE. You help employees with email tasks. Be concise, professional, and culturally appropriate for a UAE government context.`;
+
+    await callClaude(systemPrompt, prompts[action](outputLang), emailContent, actionLabels[action]);
+  }
+
+  async function sendCustom() {
+    const input = document.getElementById('custom-prompt');
+    const question = input.value.trim();
+    if (!question) return;
+    if (!apiKey) { alert('Please set your API key first.'); return; }
+
+    const emailContent = `Subject: ${currentEmailSubject}\nFrom: ${currentEmailSender}\n\n${currentEmailBody}`;
+    const systemPrompt = `You are Claude, an AI assistant inside Microsoft Outlook for MBRSG government employees in Dubai. Answer questions about emails concisely and professionally.`;
+
+    input.value = '';
+    await callClaude(systemPrompt, question, emailContent, 'Claude');
+  }
+
+  async function scanEmail() {
+    if (!apiKey) { alert('Please set your API key first.'); return; }
+
+    hideAlerts();
+    showAlert('warn', 'Scanning...', 'Checking for confidential content...');
+
+    const emailContent = `Subject: ${currentEmailSubject}\nFrom: ${currentEmailSender}\n\n${currentEmailBody}`;
+    const systemPrompt = `You are a document security classifier for MBRSG (Mohammed Bin Rashid School of Government), a UAE government institution.
+
+Scan this email and respond ONLY with valid JSON — no other text:
+{"confidential": true/false, "reason": "brief reason if confidential, empty string if not", "risk_level": "none/low/medium/high"}
+
+Flag as confidential if the email contains:
+- Classification markings: Confidential, Secret, Restricted, Internal Only, سري, خاص, مقيد
+- Employee personal data (Emirates ID, passport numbers, salaries, performance reviews)
+- Government tender or procurement details not yet public
+- Legal case files or court-related content  
+- Budget figures marked as internal
+- Ministerial or executive correspondence marked restricted
+- Medical records or sensitive HR information`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 200,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: `Scan this email:\n\n${emailContent}` }]
+        })
+      });
+
+      const data = await response.json();
+      hideAlerts();
+
+      if (data.error) {
+        showAlert('warn', 'API Error', data.error.message);
+        return;
+      }
+
+      const text = data.content[0].text.trim();
+      const clean = text.replace(/```json|```/g, '').trim();
+      const result = JSON.parse(clean);
+
+      if (result.confidential) {
+        showAlert('danger', null, result.reason || 'Confidential content detected. Do not forward or share this email.');
+      } else {
+        showAlert('success');
+      }
+    } catch(e) {
+      hideAlerts();
+      showAlert('warn', 'Scan error', 'Could not complete scan: ' + e.message);
+    }
+  }
+
+  async function callClaude(system, userPrompt, emailContent, label) {
+    showOutputLoading(label);
+    hideAlerts();
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1000,
+          system: system,
+          messages: [{
+            role: 'user',
+            content: userPrompt + '\n\nEmail content:\n\n' + emailContent
+          }]
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        showOutput('Error: ' + data.error.message, label);
+        return;
+      }
+
+      const text = data.content[0].text;
+      const inputTokens = data.usage?.input_tokens || 0;
+      const outputTokens = data.usage?.output_tokens || 0;
+      const cost = ((inputTokens * 3 + outputTokens * 15) / 1000000).toFixed(5);
+
+      lastOutput = text;
+      showOutput(text, label, `${inputTokens + outputTokens} tokens · $${cost}`);
+
+    } catch(e) {
+      showOutput('Connection error: ' + e.message + '\n\nMake sure your API key is valid and you have billing set up at console.anthropic.com', label);
+    }
+  }
+
+  function showOutputLoading(label) {
+    document.getElementById('output-section').classList.add('active');
+    document.getElementById('output-label').textContent = label;
+    document.getElementById('output-spinner').style.display = 'inline-block';
+    document.getElementById('output-body').textContent = '';
+    document.getElementById('output-body').classList.remove('cursor');
+    document.getElementById('token-display').textContent = '';
+    document.getElementById('insert-btn').style.display = 'none';
+  }
+
+  function showOutput(text, label, tokenInfo = '') {
+    document.getElementById('output-section').classList.add('active');
+    document.getElementById('output-label').textContent = label || 'Claude';
+    document.getElementById('output-spinner').style.display = 'none';
+    document.getElementById('token-display').textContent = tokenInfo;
+    document.getElementById('insert-btn').style.display = label === 'Draft Reply' || label === 'Improved Version' ? 'block' : 'none';
+
+    const body = document.getElementById('output-body');
+    body.textContent = '';
+    body.classList.add('cursor');
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        body.textContent = text.substring(0, i + 1);
+        i += 3;
+      } else {
+        body.textContent = text;
+        body.classList.remove('cursor');
+        clearInterval(interval);
+      }
+    }, 10);
+  }
+
+  function clearOutput() {
+    document.getElementById('output-section').classList.remove('active');
+    document.getElementById('output-body').textContent = '';
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output-body').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.target;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  }
+
+  function insertToReply() {
+    const text = document.getElementById('output-body').textContent;
+    try {
+      Office.context.mailbox.item.body.setAsync(text, { coercionType: Office.CoercionType.Text }, (result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          const btn = document.getElementById('insert-btn');
+          btn.textContent = 'Inserted!';
+          setTimeout(() => btn.textContent = 'Insert', 1500);
+        }
+      });
+    } catch(e) {
+      alert('Insert only works inside Outlook. Copy the text manually.');
+    }
+  }
+
+  function showAlert(type, title, text) {
+    hideAlerts();
+    if (type === 'danger') {
+      document.getElementById('alert-danger-text').textContent = text || '';
+      document.getElementById('alert-danger').classList.add('active');
+    } else if (type === 'success') {
+      document.getElementById('alert-success').classList.add('active');
+    } else if (type === 'warn') {
+      document.getElementById('alert-warn-title').textContent = title || 'Warning';
+      document.getElementById('alert-warn-text').textContent = text || '';
+      document.getElementById('alert-warn').classList.add('active');
+    }
+  }
+
+  function hideAlerts() {
+    document.getElementById('alert-danger').classList.remove('active');
+    document.getElementById('alert-success').classList.remove('active');
+    document.getElementById('alert-warn').classList.remove('active');
+  }
+</script>
+</body>
+</html>
