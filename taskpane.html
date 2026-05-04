@@ -310,7 +310,52 @@ function showOutputLoading(label){document.getElementById('output-section').clas
 function showOutput(text,label,showInsert,tokenInfo=''){document.getElementById('output-section').classList.add('active');document.getElementById('output-label').textContent=label;document.getElementById('output-spinner').style.display='none';document.getElementById('token-display').textContent=tokenInfo;document.getElementById('insert-btn').style.display=showInsert?'block':'none';const body=document.getElementById('output-body');body.textContent='';body.classList.add('cursor');let i=0;const iv=setInterval(()=>{if(i<text.length){body.textContent=text.substring(0,i+1);i+=4;}else{body.textContent=text;body.classList.remove('cursor');clearInterval(iv);}},10);}
 function clearOutput(){document.getElementById('output-section').classList.remove('active');document.getElementById('output-body').textContent='';}
 function copyOutput(){const text=document.getElementById('output-body').textContent;navigator.clipboard.writeText(text).then(()=>{const btn=document.getElementById('copy-btn');btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent=t[outputLang].copy,1500);});}
-function insertToReply(){const text=document.getElementById('output-body').textContent;try{Office.context.mailbox.item.body.setAsync(text,{coercionType:Office.CoercionType.Text},(r)=>{if(r.status===Office.AsyncResultStatus.Succeeded){const btn=document.getElementById('insert-btn');btn.textContent='✓ Done!';setTimeout(()=>btn.textContent=t[outputLang].insert,1500);}});}catch(e){alert('Insert works inside Outlook only. Please copy instead.');}}
+function insertToReply(){
+  const text = document.getElementById('output-body').textContent;
+  try {
+    const item = Office.context.mailbox.item;
+    if (!item) { fallbackCopy(text); return; }
+    // Try prependAsync first (works in compose/reply mode)
+    if (item.body && item.body.prependAsync) {
+      item.body.prependAsync(text + '\n\n', { coercionType: Office.CoercionType.Text }, (r) => {
+        if (r.status === Office.AsyncResultStatus.Succeeded) {
+          const btn = document.getElementById('insert-btn');
+          btn.textContent = '✓ Inserted!';
+          setTimeout(() => btn.textContent = t[outputLang].insert, 2000);
+        } else {
+          // fallback to setAsync
+          item.body.setAsync(text, { coercionType: Office.CoercionType.Text }, (r2) => {
+            if (r2.status === Office.AsyncResultStatus.Succeeded) {
+              const btn = document.getElementById('insert-btn');
+              btn.textContent = '✓ Inserted!';
+              setTimeout(() => btn.textContent = t[outputLang].insert, 2000);
+            } else { fallbackCopy(text); }
+          });
+        }
+      });
+    } else if (item.body && item.body.setAsync) {
+      item.body.setAsync(text, { coercionType: Office.CoercionType.Text }, (r) => {
+        if (r.status === Office.AsyncResultStatus.Succeeded) {
+          const btn = document.getElementById('insert-btn');
+          btn.textContent = '✓ Inserted!';
+          setTimeout(() => btn.textContent = t[outputLang].insert, 2000);
+        } else { fallbackCopy(text); }
+      });
+    } else { fallbackCopy(text); }
+  } catch(e) { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('insert-btn');
+    btn.textContent = '✓ Copied! Paste manually';
+    setTimeout(() => btn.textContent = t[outputLang].insert, 2500);
+  }).catch(() => {
+    const btn = document.getElementById('insert-btn');
+    btn.textContent = 'Use Copy button';
+    setTimeout(() => btn.textContent = t[outputLang].insert, 2500);
+  });
+}
 function showAlert(type,title,text){hideAlerts();if(type==='danger'){document.getElementById('alert-danger-title').textContent=title||t[outputLang].confidentialTitle;document.getElementById('alert-danger-text').textContent=text||'';document.getElementById('alert-danger').classList.add('active');}else if(type==='success'){document.getElementById('alert-success').classList.add('active');}else if(type==='warn'){document.getElementById('alert-warn-title').textContent=title||'';document.getElementById('alert-warn-text').textContent=text||'';document.getElementById('alert-warn').classList.add('active');}}
 function hideAlerts(){document.getElementById('alert-danger').classList.remove('active');document.getElementById('alert-success').classList.remove('active');document.getElementById('alert-warn').classList.remove('active');}
 </script>
