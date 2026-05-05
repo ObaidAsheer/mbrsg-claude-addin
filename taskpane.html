@@ -325,9 +325,7 @@ function insertToReply(){
   try {
     const item = Office.context.mailbox.item;
     if (item && item.body) {
-      item.body.prependAsync(text + '
-
-', { coercionType: 'text' }, function(r) {
+      item.body.prependAsync(text + '\n\n', { coercionType: 'text' }, function(r) {
         if (r.status === 'succeeded' || r.status === Office.AsyncResultStatus.Succeeded) {
           btn.textContent = '✓ Inserted!';
           setTimeout(() => btn.textContent = t[outputLang].insert, 2000);
