@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBRSG AI Portal</title>
+<style>
+:root {
+  --navy: #002f6d;
+  --navy-dark: #001f4a;
+  --navy-light: #e6edf7;
+  --grey: #a8a8aa;
+  --grey-light: #f5f5f6;
+  --border: #dde3ed;
+  --text: #1a1a2e;
+  --muted: #5a6a7e;
+  --surface: #ffffff;
+  --green: #2e7d32;
+  --green-light: #e8f5e9;
+  --red: #c62828;
+  --red-light: #ffebee;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  background: var(--grey-light);
+  color: var(--text);
+  font-size: 14px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  background: var(--navy);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-logo {
+  width: 42px; height: 42px;
+  background: white;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.header-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+.header-text { flex: 1; }
+.header-title { font-size: 15px; font-weight: 600; color: white; }
+.header-sub { font-size: 11px; color: var(--grey); margin-top: 1px; }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-badge {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.8);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+/* Nav tabs */
+.nav {
+  background: var(--navy-dark);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  padding: 0 24px;
+  gap: 2px;
+}
+.nav-tab {
+  padding: 10px 18px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.nav-tab:hover { color: white; }
+.nav-tab.active { color: white; border-bottom-color: white; }
+
+/* Main layout */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  flex: 1;
+  width: 100%;
+}
+
+/* Panels */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Chat interface */
+.chat-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  height: calc(100vh - 160px);
+}
+
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sidebar-card-title {
+  padding: 10px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--grey-light);
+}
+
+.quick-action {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+}
+.quick-action:last-child { border-bottom: none; }
+.quick-action:hover { background: var(--navy-light); color: var(--navy); }
+.quick-action-icon { font-size: 14px; flex-shrink: 0; }
+
+/* Chat window */
+.chat-window {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 85%;
+}
+
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.msg.assistant .msg-avatar { background: var(--navy); color: white; font-size: 11px; }
+.msg.user .msg-avatar { background: var(--grey-light); color: var(--navy); border: 1px solid var(--border); }
+
+.msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.msg.assistant .msg-bubble {
+  background: var(--grey-light);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-top-left-radius: 4px;
+}
+
+.msg.user .msg-bubble {
+  background: var(--navy);
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.msg-bubble pre {
+  background: rgba(0,0,0,0.06);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+}
+
+.msg.user .msg-bubble pre { background: rgba(255,255,255,0.15); }
+
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.msg.user .msg-time { text-align: right; }
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 10px 14px;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--grey);
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+.chat-input-area {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--grey-light);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 42px;
+  max-height: 120px;
+  background: white;
+  color: var(--text);
+  transition: border-color 0.15s;
+  line-height: 1.5;
+}
+.chat-input:focus { border-color: var(--navy); }
+
+.send-btn {
+  padding: 10px 18px;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  height: 42px;
+}
+.send-btn:hover { opacity: 0.88; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Announcements */
+.announcements-grid { display: flex; flex-direction: column; gap: 14px; }
+
+.announcement-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  border-left: 4px solid var(--navy);
+}
+
+.announcement-card.it { border-left-color: #0078d4; }
+.announcement-card.hr { border-left-color: #107c10; }
+.announcement-card.general { border-left-color: var(--grey); }
+
+.ann-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ann-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.ann-category.it { background: #e3f2fd; color: #0078d4; }
+.ann-category.hr { background: #e8f5e9; color: #107c10; }
+.ann-category.general { background: var(--grey-light); color: var(--muted); }
+.ann-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+.ann-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.ann-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Directory */
+.directory-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.dir-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+}
+.dir-search-input:focus { border-color: var(--navy); }
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dir-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dir-card:hover { border-color: var(--navy); background: var(--navy-light); }
+
+.dir-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.dir-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.dir-title { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+/* Procedures */
+.procedures-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+.proc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.proc-card:hover { border-color: var(--navy); background: var(--navy-light); }
+.proc-icon { font-size: 22px; flex-shrink: 0; }
+.proc-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.proc-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* Loading */
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Welcome banner */
+.welcome-banner {
+  background: var(--navy);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.welcome-text h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.welcome-text p { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+@media (max-width: 768px) {
+  .chat-layout { grid-template-columns: 1fr; height: auto; }
+  .chat-window { height: 60vh; }
+  .chat-sidebar { display: none; }
+  .main { padding: 14px; }
+  .directory-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="#002f6d" rx="8"/>
+        <text x="50" y="55" font-family="Georgia,serif" font-size="42" font-weight="bold" fill="#a8a8aa" text-anchor="middle">M</text>
+        <rect x="15" y="65" width="70" height="2.5" fill="#a8a8aa" rx="1"/>
+        <text x="50" y="82" font-family="Arial,sans-serif" font-size="10" fill="white" text-anchor="middle" letter-spacing="2">MBRSG</text>
+      </svg>
+    </div>
+    <div class="header-text">
+      <div class="header-title">MBRSG AI Portal</div>
+      <div class="header-sub">Mohammed Bin Rashid School of Government · Internal Employee Portal</div>
+    </div>
+    <div class="header-right">
+      <div class="header-badge" id="status-badge">● Connected</div>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-tab active" onclick="switchTab('chat', this)">💬 AI Assistant</div>
+    <div class="nav-tab" onclick="switchTab('procedures', this)">📋 Procedures</div>
+    <div class="nav-tab" onclick="switchTab('directory', this)">👥 Directory</div>
+    <div class="nav-tab" onclick="switchTab('announcements', this)">📢 Announcements</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- CHAT PANEL -->
+  <div class="panel active" id="panel-chat">
+    <div class="chat-layout">
+
+      <!-- Sidebar -->
+      <div class="chat-sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Quick actions</div>
+          <div class="quick-action" onclick="sendQuick('Write me a professional email to Sara Bin Jarsh (HR Manager) requesting annual leave for next week.')">
+            <span class="quick-action-icon">✉</span>Email to HR Manager
+          </div>
+          <div class="quick-action" onclick="sendQuick('What are the steps to submit a purchase requisition in GRP?')">
+            <span class="quick-action-icon">📋</span>GRP Requisition steps
+          </div>
+          <div class="quick-action" onclick="sendQuick('How do I raise an IT support ticket?')">
+            <span class="quick-action-icon">🖥</span>Raise IT ticket
+          </div>
+          <div class="quick-action" onclick="sendQuick('What is the process for applying for annual leave?')">
+            <span class="quick-action-icon">📅</span>Apply for annual leave
+          </div>
+          <div class="quick-action" onclick="sendQuick('Write a professional email to Esam Mohammed Dukhan (Senior Financial Controller) about a budget inquiry.')">
+            <span class="quick-action-icon">💰</span>Email to Finance
+          </div>
+          <div class="quick-action" onclick="sendQuick('What are the steps to request a new laptop or IT equipment?')">
+            <span class="quick-action-icon">💻</span>Request IT equipment
+          </div>
+          <div class="quick-action" onclick="sendQuick('How do I submit a travel request or expense claim?')">
+            <span class="quick-action-icon">✈</span>Travel & expenses
+          </div>
+          <div class="quick-action" onclick="sendQuick('What is the procurement process for vendors at MBRSG?')">
+            <span class="quick-action-icon">🏢</span>Procurement process
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card-title">Key contacts</div>
+          <div class="quick-action" onclick="sendQuick('Who is the HR Manager at MBRSG and what can I contact them for?')">
+            <span class="quick-action-icon">👩</span>HR Manager
+          </div>
+          <div class="quick-action" onclick="sendQuick('Who handles IT support and how do I contact them?')">
+            <span class="quick-action-icon">🔧</span>IT Support
+          </div>
+          <div class="quick-action" onclick="sendQuick('Who is the Director of Legal Affairs at MBRSG?')">
+            <span class="quick-action-icon">⚖</span>Legal Affairs
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat window -->
+      <div class="chat-window">
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg assistant">
+            <div class="msg-avatar">AI</div>
+            <div>
+              <div class="msg-bubble">
+                Hello! I'm your MBRSG AI assistant. I can help you with:<br><br>
+                • <strong>Draft emails</strong> — just say who you want to write to<br>
+                • <strong>Internal procedures</strong> — GRP, HR, IT, Finance processes<br>
+                • <strong>Staff directory</strong> — find anyone at MBRSG<br>
+                • <strong>Research</strong> — any topic or question<br><br>
+                What can I help you with today?
+              </div>
+              <div class="msg-time">Now</div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask anything — e.g. 'Write an email to the IT Manager' or 'How do I apply for leave?'" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCEDURES PANEL -->
+  <div class="panel" id="panel-procedures">
+    <div class="welcome-banner">
+      <div style="font-size:28px">📋</div>
+      <div class="welcome-text">
+        <h2>Internal Procedures</h2>
+        <p>Step-by-step guides for common MBRSG processes. Click any procedure to get AI-guided instructions.</p>
+      </div>
+    </div>
+    <div class="procedures-grid">
+      <div class="proc-card" onclick="goToChat('What are the exact steps to submit a purchase requisition in the GRP system at MBRSG?')">
+        <div class="proc-icon">🛒</div>
+        <div><div class="proc-name">GRP Purchase Requisition</div><div class="proc-desc">How to submit a purchase request through the GRP system</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to apply for annual leave at MBRSG? Include all steps and who to notify.')">
+        <div class="proc-icon">📅</div>
+        <div><div class="proc-name">Annual Leave Application</div><div class="proc-desc">Steps to apply for and get annual leave approved</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I raise an IT support ticket at MBRSG? What information do I need and who handles it?')">
+        <div class="proc-icon">🖥</div>
+        <div><div class="proc-name">IT Support Ticket</div><div class="proc-desc">Raise and track IT support requests</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to request new IT equipment such as a laptop, monitor, or phone at MBRSG?')">
+        <div class="proc-icon">💻</div>
+        <div><div class="proc-name">IT Equipment Request</div><div class="proc-desc">Request new or replacement IT equipment</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the travel request and expense claim process at MBRSG? How do I get reimbursed?')">
+        <div class="proc-icon">✈</div>
+        <div><div class="proc-name">Travel & Expense Claim</div><div class="proc-desc">Submit travel requests and claim expenses</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the vendor registration and procurement process at MBRSG? How do we onboard a new vendor?')">
+        <div class="proc-icon">🏢</div>
+        <div><div class="proc-name">Vendor Registration</div><div class="proc-desc">Onboard and register a new vendor or supplier</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I request a new user account or system access at MBRSG? What is the approval process?')">
+        <div class="proc-icon">🔑</div>
+        <div><div class="proc-name">System Access Request</div><div class="proc-desc">Request access to MBRSG systems and applications</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the performance appraisal process at MBRSG? When does it happen and what are the steps?')">
+        <div class="proc-icon">⭐</div>
+        <div><div class="proc-name">Performance Appraisal</div><div class="proc-desc">Understand the appraisal cycle and process</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I book a meeting room at MBRSG? What is the process and who do I contact?')">
+        <div class="proc-icon">🏛</div>
+        <div><div class="proc-name">Meeting Room Booking</div><div class="proc-desc">Reserve meeting rooms and facilities</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to onboard a new employee at MBRSG? What does IT need to set up?')">
+        <div class="proc-icon">👋</div>
+        <div><div class="proc-name">New Employee Onboarding</div><div class="proc-desc">Steps to onboard and set up a new joiner</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('How do I request a VPN or remote access at MBRSG?')">
+        <div class="proc-icon">🔒</div>
+        <div><div class="proc-name">VPN & Remote Access</div><div class="proc-desc">Request and set up remote access</div></div>
+      </div>
+      <div class="proc-card" onclick="goToChat('What is the process to publish an announcement or communication to all MBRSG staff?')">
+        <div class="proc-icon">📢</div>
+        <div><div class="proc-name">Staff Announcement</div><div class="proc-desc">How to send an official communication to staff</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECTORY PANEL -->
+  <div class="panel" id="panel-directory">
+    <div class="welcome-banner">
+      <div style="font-size:28px">👥</div>
+      <div class="welcome-text">
+        <h2>Staff Directory</h2>
+        <p>Click any colleague to draft an email to them using AI.</p>
+      </div>
+    </div>
+    <div class="directory-search">
+      <input class="dir-search-input" type="text" placeholder="Search by name or role..." oninput="filterDirectory(this.value)" />
+    </div>
+    <div class="directory-grid" id="directory-grid"></div>
+  </div>
+
+  <!-- ANNOUNCEMENTS PANEL -->
+  <div class="panel" id="panel-announcements">
+    <div class="welcome-banner">
+      <div style="font-size:28px">📢</div>
+      <div class="welcome-text">
+        <h2>Announcements</h2>
+        <p>Latest IT and HR updates from MBRSG.</p>
+      </div>
+    </div>
+    <div class="announcements-grid">
+      <div class="announcement-card it">
+        <div class="ann-header">
+          <span class="ann-category it">IT</span>
+          <span class="ann-date">13 May 2026</span>
+        </div>
+        <div class="ann-title">MBRSG AI Portal — Now Live</div>
+        <div class="ann-body">The MBRSG AI Employee Portal is now available to all staff. Use it to draft emails, look up procedures, find colleagues, and get instant answers to internal questions. Access via your browser — no installation required. For support contact the IT helpdesk.</div>
+      </div>
+      <div class="announcement-card it">
+        <div class="ann-header">
+          <span class="ann-category it">IT</span>
+          <span class="ann-date">10 May 2026</span>
+        </div>
+        <div class="ann-title">Microsoft 365 Maintenance — Completed</div>
+        <div class="ann-body">The scheduled Microsoft 365 maintenance has been completed successfully. All services including Outlook, Teams, SharePoint and OneDrive are fully operational. If you experience any issues please raise an IT ticket.</div>
+      </div>
+      <div class="announcement-card hr">
+        <div class="ann-header">
+          <span class="ann-category hr">HR</span>
+          <span class="ann-date">8 May 2026</span>
+        </div>
+        <div class="ann-title">Annual Leave — Eid Al Adha 2026</div>
+        <div class="ann-body">Please be informed that the official Eid Al Adha holiday will be announced by the UAE government. Employees are requested to submit any planned leave requests through the system at least 5 working days in advance. Contact HR for further details.</div>
+      </div>
+      <div class="announcement-card hr">
+        <div class="ann-header">
+          <span class="ann-category hr">HR</span>
+          <span class="ann-date">5 May 2026</span>
+        </div>
+        <div class="ann-title">Q2 Performance Review — Starting Soon</div>
+        <div class="ann-body">Q2 performance reviews will commence shortly. All managers are required to complete evaluations through the HR system. Employees should update their KPIs and self-assessment forms. Contact Sara Bin Jarsh in HR for any questions.</div>
+      </div>
+      <div class="announcement-card general">
+        <div class="ann-header">
+          <span class="ann-category general">General</span>
+          <span class="ann-date">1 May 2026</span>
+        </div>
+        <div class="ann-title">CrowdStrike EDR — Deployed on All Devices</div>
+        <div class="ann-body">The IT department has successfully deployed CrowdStrike Falcon EDR on all MBRSG devices as part of our security fabric enhancement. No action is required from employees. If you notice the Falcon icon on your device, this is expected.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PROXY_URL = 'https://mbrsg-claude-proxy.obaid-asheer.workers.dev';
+
+const EMPLOYEES = [
+  {name:"Mohammed Hassan Elkhatib", title:"Senior Director of Support Services"},
+  {name:"Houreya Ahmed Almarzooqi", title:"Manager – Executive President Office"},
+  {name:"Ali Bin Seba Almarri", title:"Professor of Health Policy and Systems Research"},
+  {name:"Aisha Ibrahim Al Ali", title:"Academic Development Office Director"},
+  {name:"Yusra Sufian Alagha", title:"Admissions and Program Relations Manager"},
+  {name:"Shuaib Kunnoth Kunnummal", title:"Programmer"},
+  {name:"Khalid Essa Almarri", title:"Senior Director of Institutional Effectiveness"},
+  {name:"Hayathem Mohammed Shukri", title:"Student & Alumni Affairs Manager"},
+  {name:"Kieran James Ross", title:"Registrar"},
+  {name:"Mona Mostafa Elsholkamy", title:"Associate Professor of Macroeconomic Policies"},
+  {name:"Lama Saleem Zakzak", title:"Principal Researcher"},
+  {name:"Marwah Mohamed Alantali", title:"Senior Manager - Data and Impact Measurement"},
+  {name:"Anthony Alba Bartolo", title:"IT Administrator"},
+  {name:"Salman Mehdi Amin", title:"Chief Accountant"},
+  {name:"Roqaya Abbas Faramarzy", title:"Human Resources Officer"},
+  {name:"Ahmed Maher Abu Amarah", title:"Senior Accountant"},
+  {name:"Eiman Ali Almarzooqi", title:"Research Faculty Senior Manager"},
+  {name:"Bryan Teofil Cuenca", title:"IT Technician"},
+  {name:"Maha Mohammad Abdulqader", title:"Planning & Project Manager"},
+  {name:"Yousif El-Ghalayini", title:"Professor - Acting Dean"},
+  {name:"Melodena Stephens Alfred", title:"Professor"},
+  {name:"Ali Hamad Alhuraiz", title:"Senior Administrative Affairs Manager"},
+  {name:"Arthur Seakhoa King", title:"Director of Academic Affairs"},
+  {name:"Fadi Mohamed Salem", title:"Director of Research & Advisory"},
+  {name:"Marwah Ali Almaamari", title:"Senior Executive Education Officer"},
+  {name:"Yousuf Mohammad Ramadhan", title:"Sr. Manager, Programs Development"},
+  {name:"Maryam Essa Alblooshi", title:"Library & Educational Technologies Officer"},
+  {name:"Rawdha Hilal Al Aamri", title:"Senior Administrative Officer – Alumni"},
+  {name:"Sara Mohammad Bin Jarsh", title:"HR Manager"},
+  {name:"Lulwa Yousuf Abdulla", title:"Senior Business Development Officer"},
+  {name:"Obaid Hasan Asheer", title:"IT Manager"},
+  {name:"Mounia Drissi", title:"Assistant Professor"},
+  {name:"Khalid Wassef Al Wazani", title:"Professor of Economics & Public Policy"},
+  {name:"Fatma Saif Almheiri", title:"Senior Corporate Communications Officer"},
+  {name:"Fatma Jassem Almarri", title:"Senior Administrator Officer"},
+  {name:"Shamsa Mohammad Ali", title:"Administrative Officer"},
+  {name:"Yousra Hamid Albarwani", title:"Registration Officer"},
+  {name:"Salama Jassim Bin Kalban", title:"Coordinator"},
+  {name:"Almaha Juma Alfalasi", title:"Executive Education Programs Officer"},
+  {name:"Fatima Eisa Alblooshi", title:"Executive Education Programs Officer"},
+  {name:"Hamid Saeed Younas", title:"Library & Educational Technologies Manager"},
+  {name:"Shamsa Saif Alremeithi", title:"Senior Public Relation Officer"},
+  {name:"Aisha Abdulla Alali", title:"Excellence & Quality Manager"},
+  {name:"Akmaral Orazaly", title:"Principal Researcher"},
+  {name:"Latifa Darwish Mohammed", title:"Customized Programs Manager"},
+  {name:"Hanan Hassan Darwish", title:"Senior Human Resource Officer"},
+  {name:"Saeed Musallam Al Amri", title:"Assistant Researcher"},
+  {name:"Shaima Ibrahim Taher", title:"Executive Education Officer"},
+  {name:"Shamma Adel Alkhumais", title:"Senior Graphic Designer"},
+  {name:"Shaikha Ahmed Alrahoomi", title:"Director of Executive Education"},
+  {name:"Gir Bahadur Aryal", title:"Admin Affairs Administrator"},
+  {name:"Amani Mohammed", title:"Executive Education Specialist"},
+  {name:"Keerthi Krishnan", title:"Accountant"},
+  {name:"Alaa Ahmed Raslan", title:"Senior Performance and Process Analyst"},
+  {name:"Yasmine Abosarry", title:"Receptionist"},
+  {name:"Masood Abdulla Helal", title:"Public Relations Officer"},
+  {name:"Esam Mohammed Dukhan", title:"Senior Financial Controller"},
+  {name:"Racha Walid Sleiman", title:"Director of Legal Affairs"},
+  {name:"Saleha Juma BuKattara", title:"Director of Corporate Communications"},
+];
+
+const SYSTEM_PROMPT = `You are the MBRSG AI Assistant — an internal AI portal for employees of Mohammed Bin Rashid School of Government (MBRSG) in Dubai, UAE.
+
+You have full knowledge of all MBRSG employees:
+${EMPLOYEES.map(e => `- ${e.name}: ${e.title}`).join('\n')}
+
+Key contacts:
+- HR Manager: Sara Mohammad Bin Jarsh
+- IT Manager: Obaid Hasan Asheer
+- IT Administrator: Anthony Alba Bartolo
+- IT Technician: Bryan Teofil Cuenca
+- Senior Financial Controller: Esam Mohammed Dukhan
+- Chief Accountant: Salman Mehdi Amin
+- Director of Legal Affairs: Racha Walid Sleiman
+- Director of Corporate Communications: Saleha Juma BuKattara
+
+Rules:
+1. When drafting emails: write the email body only. Start with "Dear [Name]," and end after the closing line "Best regards,". No signature block, no phone numbers, no addresses, no legal disclaimers. Plain text only.
+2. When explaining procedures: give clear numbered steps. Be specific and practical.
+3. When someone asks about a person: use the directory above.
+4. Be direct and concise. No preamble, no fluff.
+5. Always respond in the same language the user writes in (Arabic or English).
+6. For IT issues: direct users to raise a ticket with Obaid Asheer's team (IT Department).
+7. For HR matters: direct to Sara Bin Jarsh.
+8. You know MBRSG is a government school of governance in Dubai, City Walk, Building B02.`;
+
+let conversationHistory = [];
+let isLoading = false;
+
+// Init directory
+function initDirectory() {
+  const grid = document.getElementById('directory-grid');
+  grid.innerHTML = EMPLOYEES.map(e => `
+    <div class="dir-card" onclick="goToChat('Write me a professional email to ${e.name}, ${e.title} at MBRSG, about ')">
+      <div class="dir-avatar">${getInitials(e.name)}</div>
+      <div>
+        <div class="dir-name">${e.name}</div>
+        <div class="dir-title">${e.title}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getInitials(name) {
+  return name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+}
+
+function filterDirectory(q) {
+  const grid = document.getElementById('directory-grid');
+  const filtered = EMPLOYEES.filter(e =>
+    e.name.toLowerCase().includes(q.toLowerCase()) ||
+    e.title.toLowerCase().includes(q.toLowerCase())
+  );
+  grid.innerHTML = filtered.map(e => `
+    <div class="dir-card" onclick="goToChat('Write me a professional email to ${e.name}, ${e.title} at MBRSG, about ')">
+      <div class="dir-avatar">${getInitials(e.name)}</div>
+      <div>
+        <div class="dir-name">${e.name}</div>
+        <div class="dir-title">${e.title}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function goToChat(prompt) {
+  // Switch to chat tab
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+  document.getElementById('panel-chat').classList.add('active');
+  // Set input
+  const input = document.getElementById('chat-input');
+  input.value = prompt;
+  input.focus();
+  autoResize(input);
+}
+
+function sendQuick(prompt) {
+  document.getElementById('chat-input').value = prompt;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addMessage(role, content) {
+  const messages = document.getElementById('chat-messages');
+  const time = new Date().toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = role === 'assistant' ? 'AI' : 'Me';
+  const formattedContent = content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <div class="msg-bubble">${formattedContent}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addTyping() {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+  div.innerHTML = `
+    <div class="msg-avatar">AI</div>
+    <div>
+      <div class="msg-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  isLoading = true;
+  input.value = '';
+  autoResize(input);
+  document.getElementById('send-btn').disabled = true;
+
+  addMessage('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+  addTyping();
+
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    removeTyping();
+
+    if (data.error) {
+      addMessage('assistant', 'Sorry, I encountered an error: ' + data.error.message);
+    } else {
+      const reply = data.content[0].text;
+      addMessage('assistant', reply);
+      conversationHistory.push({ role: 'assistant', content: reply });
+      // Keep history to last 20 messages
+      if (conversationHistory.length > 20) {
+        conversationHistory = conversationHistory.slice(-20);
+      }
+    }
+  } catch(e) {
+    removeTyping();
+    addMessage('assistant', 'Connection error. Please check your network and try again.');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+initDirectory();
+</script>
+</body>
+</html>
