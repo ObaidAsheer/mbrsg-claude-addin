@@ -446,10 +446,59 @@ body {
   .directory-grid { grid-template-columns: 1fr; }
 }
 </style>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 </head>
 <body>
 
 <!-- Header -->
+
+<!-- SSO Login Screen -->
+<div id="sso-screen" style="
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #f5f5f6; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Segoe UI, Tahoma, Arial, sans-serif;
+">
+  <div style="
+    background: white; border-radius: 12px; padding: 40px;
+    width: 380px; box-shadow: 0 8px 32px rgba(0,47,109,0.12);
+    text-align: center; border: 1px solid #dde3ed;
+  ">
+    <div style="
+      width: 60px; height: 60px; background: #002f6d;
+      border-radius: 10px; margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+    ">
+      <svg viewBox="0 0 100 100" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+        <text x="50" y="62" font-family="Georgia,serif" font-size="52" font-weight="bold" fill="#a8a8aa" text-anchor="middle">M</text>
+      </svg>
+    </div>
+    <div style="font-size: 20px; font-weight: 600; color: #002f6d; margin-bottom: 6px;">MBRSG AI Portal</div>
+    <div style="font-size: 13px; color: #a8a8aa; margin-bottom: 28px;">Mohammed Bin Rashid School of Government</div>
+    <button id="sso-btn" onclick="signIn()" style="
+      width: 100%; padding: 12px;
+      background: #002f6d; color: white;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.15s;
+    ">
+      <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+        <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+        <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+        <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+      </svg>
+      Sign in with Microsoft
+    </button>
+    <div id="sso-error" style="margin-top: 14px; font-size: 12px; color: #c62828; display: none;"></div>
+    <div style="margin-top: 20px; font-size: 11px; color: #a8a8aa;">
+      Use your MBRSG Microsoft account<br>(@mbrsg.ac.ae)
+    </div>
+  </div>
+</div>
+
 <div class="header">
   <div class="header-inner">
     <div class="header-logo">
@@ -950,6 +999,91 @@ async function sendMessage() {
 }
 
 initDirectory();
+
+// ===== AZURE SSO =====
+const msalConfig = {
+  auth: {
+    clientId: '79bf381a-b3c0-44d3-944f-f1749aafd094',
+    authority: 'https://login.microsoftonline.com/ad2ab9b1-209c-4d41-b70b-b430967d7f6f',
+    redirectUri: 'https://obaidasheer.github.io/mbrsg-claude-addin/mbrsg-portal.html',
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: false,
+  }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+const loginRequest = {
+  scopes: ['User.Read'],
+};
+
+async function initSSO() {
+  try {
+    // Handle redirect response first
+    const response = await msalInstance.handleRedirectPromise();
+    if (response) {
+      onSignedIn(response.account);
+      return;
+    }
+
+    // Check if already signed in
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      onSignedIn(accounts[0]);
+      return;
+    }
+
+    // Show login screen
+    document.getElementById('sso-screen').style.display = 'flex';
+  } catch (e) {
+    console.error('SSO init error:', e);
+    document.getElementById('sso-screen').style.display = 'flex';
+  }
+}
+
+async function signIn() {
+  const btn = document.getElementById('sso-btn');
+  btn.innerHTML = '<span style="opacity:0.7">Signing in...</span>';
+  btn.disabled = true;
+  try {
+    await msalInstance.loginRedirect(loginRequest);
+  } catch (e) {
+    const err = document.getElementById('sso-error');
+    err.style.display = 'block';
+    err.textContent = 'Sign in failed. Please try again or contact IT.';
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg> Sign in with Microsoft`;
+    btn.disabled = false;
+  }
+}
+
+function onSignedIn(account) {
+  // Hide login screen
+  document.getElementById('sso-screen').style.display = 'none';
+
+  // Update header with user name
+  const name = account.name || account.username;
+  const initials = name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+  document.getElementById('status-badge').innerHTML = `
+    <span style="display:flex;align-items:center;gap:6px;">
+      <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${initials}</span>
+      ${name.split(' ')[0]}
+      <span style="cursor:pointer;opacity:0.7;font-size:10px;" onclick="signOut()">Sign out</span>
+    </span>
+  `;
+}
+
+function signOut() {
+  msalInstance.logoutRedirect({
+    postLogoutRedirectUri: 'https://obaidasheer.github.io/mbrsg-claude-addin/mbrsg-portal.html'
+  });
+}
+
+// Initialize SSO on load
+initSSO();
+// ===== END SSO =====
+
 </script>
 </body>
 </html>
