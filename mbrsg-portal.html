@@ -446,7 +446,7 @@ body {
   .directory-grid { grid-template-columns: 1fr; }
 }
 </style>
-<script src="https://alcdn.msftauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 </head>
 <body>
 
@@ -1081,7 +1081,14 @@ function signOut() {
 }
 
 // Initialize SSO on load
-initSSO();
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof msal !== 'undefined') {
+    initSSO();
+  } else {
+    // MSAL not loaded yet, wait
+    setTimeout(initSSO, 500);
+  }
+});
 // ===== END SSO =====
 
 </script>
