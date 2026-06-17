@@ -1093,13 +1093,13 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-function addMessage(role, content) {
+function addMessage(role, content, isHtml = false) {
   const messages = document.getElementById('chat-messages');
   const time = new Date().toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   const avatar = role === 'assistant' ? 'AI' : 'Me';
-  const formattedContent = content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  const formattedContent = isHtml ? content : content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   div.innerHTML = `
     <div class="msg-avatar">${avatar}</div>
     <div>
@@ -1109,6 +1109,101 @@ function addMessage(role, content) {
   `;
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
+}
+
+function isDocumentRequest(msg) {
+  const m = msg.toLowerCase().trim();
+  const actions = ['create','generate','make','write','draft','prepare','produce','build','compose','give me','i need'];
+  const hasAction = actions.some(a => m.includes(a));
+  const types = [
+    { keywords: ['minutes of meeting','meeting minutes',' mom ','mom for','minutes for'], type: 'word', label: 'Minutes of Meeting' },
+    { keywords: ['formal report','status report','progress report'], type: 'word', label: 'Report' },
+    { keywords: ['official letter','cover letter'], type: 'word', label: 'Letter' },
+    { keywords: ['memorandum'], type: 'word', label: 'Memo' },
+    { keywords: ['agenda for','meeting agenda'], type: 'word', label: 'Agenda' },
+    { keywords: ['proposal','project proposal'], type: 'word', label: 'Proposal' },
+    { keywords: ['spreadsheet','budget plan','leave tracker'], type: 'excel', label: 'Spreadsheet' },
+    { keywords: ['.pdf'], type: 'pdf', label: 'PDF' },
+    // Generic terms — require an action word
+    { keywords: ['report'], type: 'word', label: 'Report', requireAction: true },
+    { keywords: ['letter'], type: 'word', label: 'Letter', requireAction: true },
+    { keywords: ['memo'], type: 'word', label: 'Memo', requireAction: true },
+    { keywords: ['agenda'], type: 'word', label: 'Agenda', requireAction: true },
+    { keywords: ['document','doc'], type: 'word', label: 'Document', requireAction: true },
+    { keywords: ['spreadsheet','excel'], type: 'excel', label: 'Spreadsheet', requireAction: true },
+  ];
+  for (const t of types) {
+    for (const kw of t.keywords) {
+      if (m.includes(kw)) {
+        if (!t.requireAction || hasAction) {
+          return { isDocument: true, type: t.type, label: t.label };
+        }
+      }
+    }
+  }
+  return { isDocument: false };
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function downloadAsWord(btn) {
+  const content = btn.dataset.content;
+  const filename = (btn.dataset.filename || 'document') + '.rtf';
+  const escaped = content.replace(/\\/g,'\\\\').replace(/[{}]/g,'\\$&').replace(/\n/g,'\\par\n');
+  const rtf = `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\froman Times New Roman;}}\\f0\\fs24 ${escaped}}`;
+  triggerDownload(new Blob([rtf], { type: 'application/rtf' }), filename);
+}
+
+function downloadAsTxt(btn) {
+  const content = btn.dataset.content;
+  const filename = (btn.dataset.filename || 'document') + '.txt';
+  triggerDownload(new Blob([content], { type: 'text/plain;charset=utf-8' }), filename);
+}
+
+function copyContent(btn) {
+  navigator.clipboard.writeText(btn.dataset.content).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+function showDocumentPreview(content, type, label) {
+  const safeContent = escapeHtml(content);
+  const filename = label.replace(/\s+/g, '_');
+  const html = `
+    <div style="background:#f0f4ff;border:1px solid #c7d7f5;border-radius:10px;padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:18px;">${type==='excel'?'📊':'📝'}</span>
+        <strong style="color:#002f6d;">${label} — Ready to download</strong>
+      </div>
+      <div style="background:white;border:1px solid #dde3ed;border-radius:8px;padding:14px;max-height:260px;overflow-y:auto;font-size:12px;line-height:1.7;white-space:pre-wrap;color:#1a1a2e;margin-bottom:10px;">${safeContent}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="downloadAsWord(this)" data-content="${escapeHtml(content)}" data-filename="${filename}"
+          style="background:#002f6d;color:white;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;">
+          📄 Word (.rtf)
+        </button>
+        <button onclick="downloadAsTxt(this)" data-content="${escapeHtml(content)}" data-filename="${filename}"
+          style="background:#2e7d32;color:white;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;">
+          📋 Text (.txt)
+        </button>
+        <button onclick="copyContent(this)" data-content="${escapeHtml(content)}"
+          style="background:#e6edf7;color:#002f6d;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;">
+          📋 Copy
+        </button>
+      </div>
+    </div>`;
+  addMessage('assistant', html, true);
 }
 
 function addTyping() {
@@ -1148,7 +1243,14 @@ async function sendMessage() {
   document.getElementById('send-btn').disabled = true;
 
   addMessage('user', text);
-  conversationHistory.push({ role: 'user', content: text });
+  const docCheck = isDocumentRequest(text);
+
+  // Build the message to send to AI
+  const aiUserMessage = docCheck.isDocument
+    ? text + `\n\n[Generate complete professional ${docCheck.label} content. Include all standard sections. Respond with document content only — no preamble, no explanation.]`
+    : text;
+
+  conversationHistory.push({ role: 'user', content: aiUserMessage });
   addTyping();
 
   try {
@@ -1156,8 +1258,8 @@ async function sendMessage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
         system: SYSTEM_PROMPT,
         messages: conversationHistory
       })
@@ -1170,9 +1272,12 @@ async function sendMessage() {
       addMessage('assistant', 'Sorry, I encountered an error: ' + data.error.message);
     } else {
       const reply = data.content[0].text;
-      addMessage('assistant', reply);
+      if (docCheck.isDocument) {
+        showDocumentPreview(reply, docCheck.type, docCheck.label);
+      } else {
+        addMessage('assistant', reply);
+      }
       conversationHistory.push({ role: 'assistant', content: reply });
-      // Keep history to last 20 messages
       if (conversationHistory.length > 20) {
         conversationHistory = conversationHistory.slice(-20);
       }
