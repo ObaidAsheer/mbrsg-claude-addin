@@ -1180,8 +1180,7 @@ async function downloadAsWord(btn) {
           WidthType, HeadingLevel, ShadingType } = docx;
 
   // Parse content into paragraphs
-  const lines = content.split('
-');
+  const lines = content.split('\n');
 
   // Logo image from base64
   const logoBytes = Uint8Array.from(atob(MBRSG_LOGO_B64), c => c.charCodeAt(0));
@@ -1334,8 +1333,7 @@ async function downloadAsPDF(btn) {
   pdf.line(marginL, marginT + 11, pageW - marginR, marginT + 11);
 
   let y = marginT + 20;
-  const lines = content.split('
-');
+  const lines = content.split('\n');
 
   for (const line of lines) {
     if (y > pageH - marginB - 10) {
@@ -1412,8 +1410,7 @@ async function downloadAsPPTX(btn) {
   pptx.title = label;
 
   // Parse content into slides (split by lines starting with # or slide markers)
-  const allLines = content.split('
-');
+  const allLines = content.split('\n');
   let slides = [];
   let current = { title: label, bullets: [] };
 
